@@ -24,6 +24,17 @@ class CommentController {
             return res.status(400).json({ error: error.message });
         }
     }
+
+    static subscribeToVideo(req: Request, res: Response): void {
+        const { video_id } = req.params;
+
+        res.setHeader("Content-Type", "text/event-stream");
+        res.setHeader("Cache-Control", "no-cache");
+        res.setHeader("Connection", "keep-alive");
+        res.flushHeaders();
+
+        SSEService.addConnection(video_id, res);
+    }
 }
 
 export default CommentController;

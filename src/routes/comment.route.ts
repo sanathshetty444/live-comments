@@ -7,4 +7,6 @@ const router = express.Router();
 //@ts-ignore
 router.post("/comments/:video_id", CommentController.addComment);
 
+router.get("/subscribe/:video_id", CommentController.subscribeToVideo);
+
 export default router;
