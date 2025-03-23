@@ -1,4 +1,4 @@
-import express, { Request, Response } from "express";
+import express from "express";
 import commentRoutes from "./routes/comment.route";
 
 const app = express();
