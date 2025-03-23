@@ -1,4 +1,7 @@
 import express, { Request, Response } from "express";
+import CommentController from "./controllers/comment.controller";
+import commentRoutes from "./routes/comment.route";
+import { SSEService } from "./services/sse.service";
 
 const app = express();
 const port = 8888;
@@ -12,36 +15,13 @@ app.get("/subscribe/:video_id", (req: Request, res: Response) => {
     res.setHeader("Connection", "keep-alive");
     res.flushHeaders();
 
-    if (!connections[video_id]) {
-        connections[video_id] = [];
-    }
-    connections[video_id].push(res);
+    res.flushHeaders();
 
-    req.on("close", () => {
-        connections[video_id] = connections[video_id].filter(
-            (conn) => conn !== res
-        );
-    });
-
-    console.log(`User subscribed to video: ${video_id}`);
+    SSEService.addConnection(video_id, res);
 });
+app.use(express.json());
 
-app.post(
-    "/comment/:video_id",
-    express.json(),
-    (req: Request, res: Response) => {
-        const { video_id } = req.params;
-        const { user, comment } = req.body;
-
-        if (connections[video_id]) {
-            connections[video_id].forEach((conn) => {
-                conn.write(`data: ${JSON.stringify({ user, comment })}\n\n`);
-            });
-        }
-
-        res.status(200).json({ message: "Comment sent" });
-    }
-);
+app.use("/", commentRoutes);
 
 app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);
