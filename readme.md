@@ -18,3 +18,5 @@ PRIMARY KEY ((video_id_range, video_id), comment_id)
 );
 
 docker exec -it cassandra-node1 nodetool status
+
+docker-compose -f redis.yml up -d

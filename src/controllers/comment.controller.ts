@@ -25,13 +25,18 @@ class CommentController {
         }
     }
 
-    static subscribeToVideo(req: Request, res: Response): void {
+    static async subscribeToVideo(req: Request, res: Response): Promise<void> {
         const { video_id } = req.params;
 
         res.setHeader("Content-Type", "text/event-stream");
         res.setHeader("Cache-Control", "no-cache");
         res.setHeader("Connection", "keep-alive");
         res.flushHeaders();
+
+        const comments = await CommentService.getCommentsByVideoId(video_id);
+        comments.forEach((comment: any) => {
+            res.write(`data: ${JSON.stringify(comment)}\n\n`);
+        });
 
         SSEService.addConnection(video_id, res);
     }
