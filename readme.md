@@ -20,3 +20,15 @@ PRIMARY KEY ((video_id_range, video_id), comment_id)
 docker exec -it cassandra-node1 nodetool status
 
 docker-compose -f redis.yml up -d
+
+//todo
+
+1. Request Coalescing
+2. Cache warming
+
+//High Priority
+
+1. Pub/Sub
+2. Dispatchers and Gateway servers -> mimicing distributed systems
+3. Istio with Envoy
+4. Observability

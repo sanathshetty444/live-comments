@@ -1,40 +1,33 @@
 import { Response } from "express";
-
+import VideoMappingDAO from "../cacheDao/video.cacheDao";
+import { v4 as uuid } from "uuid";
 class SSEService {
-    private static connections: Map<string, Response[]> = new Map();
+    private static connections: Record<string, Response> = {};
 
-    static addConnection(videoId: string, res: Response) {
-        if (!this.connections.has(videoId)) {
-            this.connections.set(videoId, []);
-        }
-        this.connections.get(videoId)?.push(res);
+    static async addConnection(videoId: string, res: Response) {
+        const connectionId = uuid();
+        await VideoMappingDAO.addConnection(videoId, connectionId);
+
+        this.connections[connectionId] = res;
 
         // Clean up on client disconnect
         res.on("close", () => {
-            this.removeConnection(videoId, res);
+            this.removeConnection(videoId, connectionId);
         });
     }
 
-    static removeConnection(videoId: string, res: Response) {
-        const clients = this.connections.get(videoId);
-        if (!clients) return;
-
-        this.connections.set(
-            videoId,
-            clients.filter((client) => client !== res)
-        );
-        if (this.connections.get(videoId)?.length === 0) {
-            this.connections.delete(videoId);
-        }
+    static async removeConnection(videoId: string, connectionId: string) {
+        await VideoMappingDAO.removeConnection(videoId, connectionId);
+        delete this.connections[connectionId];
     }
 
-    static broadcast(videoId: string, comment: any) {
-        const clients = this.connections.get(videoId);
+    static async broadcast(videoId: string, comment: any) {
+        const clients = await await VideoMappingDAO.getConnections(videoId);
         if (!clients) return;
 
         const data = JSON.stringify(comment);
         clients.forEach((client) => {
-            client.write(`data: ${data}\n\n`);
+            this.connections?.[client]?.write(`data: ${data}\n\n`);
         });
     }
 }
