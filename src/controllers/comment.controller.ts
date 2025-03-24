@@ -14,12 +14,6 @@ class CommentController {
                 user,
                 comment
             );
-            SSEService.broadcast(video_id, {
-                video_id,
-                user,
-                comment,
-                ...result,
-            });
 
             return res
                 .status(201)
