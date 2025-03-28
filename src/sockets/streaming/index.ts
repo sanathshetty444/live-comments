@@ -15,10 +15,12 @@ export default class StreamingSocketHandler extends SocketHandler {
             console.log("User connected to streaming namespace");
 
             // Join Room
-            socket.on("joinRoom", async ({ roomId }) => {
+            socket.on("joinRoom", async (data) => {
+                const { roomId, userId } = data;
                 console.log(`User ${socket.id} joined room ${roomId}`);
                 await this.redis.sadd(`room:${roomId}`, socket.id);
                 socket.join(roomId);
+                socket.to(roomId).emit("joinRoom", { userId });
             });
 
             // Forward Offer

@@ -9,6 +9,9 @@ const config = {
 //initialize peer connnection
 let peerConnection = new RTCPeerConnection(config);
 
+// DOM Elements
+const localVideo = document.getElementById("localVideo");
+const remoteVideo = document.getElementById("remoteVideo");
 //listen to events
 peerConnection.onicecandidate = (event) => {
     if (event.candidate) {
@@ -18,15 +21,15 @@ peerConnection.onicecandidate = (event) => {
         });
     }
 };
-// DOM Elements
-const localVideo = document.getElementById("localVideo");
-const remoteVideo = document.getElementById("remoteVideo");
 
 //listen to events
 peerConnection.ontrack = (event) => {
     remoteVideo.srcObject = event.streams[0];
 };
 
+peerConnection.onicecandidateerror = (ev) => {
+    console.log("onicecandidateerror==", ev);
+};
 // Join Room
 function joinRoom(roomId) {
     socket.emit("joinRoom", { roomId });

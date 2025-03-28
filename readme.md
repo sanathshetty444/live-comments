@@ -119,7 +119,7 @@ docker run -d -p 9000:9000 \
 -   Implementing dispatcher
 -   Kafka Pub/Sub implementation
 -   Distributed system simulation with multiple application clusters (Docker-based)
--   WebRTC based video calling, screen share and remote access
+-   WebRTC based video calling SFU based
 
 ### 🔎 **High Priority**
 
@@ -134,6 +134,7 @@ docker run -d -p 9000:9000 \
     -   Prometheus
     -   ELK Stack
 -   App for live video streaming and commenting
+-   WebRTC based video calling, screen share and remote access MFU based
 
 ### 📦 **Future Enhancements**
 
