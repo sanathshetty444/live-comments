@@ -1,30 +1,32 @@
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
-import React from "react";
 import { useRoom } from "./hooks/useRoom";
 
 function Room() {
-    const { streams, ref, videoRefs } = useRoom();
-    console.log("videoRefs", videoRefs);
+    const { streams, ref, videoRefs, socket } = useRoom();
 
     return (
-        <div className="grid-cols-3">
-            {/* <Card>
-                <CardContent> */}
-            <video ref={ref} autoPlay playsInline muted />
-            <video ref={videoRefs[0]} autoPlay playsInline muted />
-            {/* {Object.keys(streams).map((_, index) => (
-                        <>
-                            <video
-                                key={index}
-                                ref={videoRefs[index]}
-                                autoPlay
-                                playsInline
-                            />
-                        </>
-                    ))} */}
-            {/* </CardContent>
-                <CardTitle className="text-center">Self</CardTitle>
-            </Card> */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            <Card>
+                <CardContent>
+                    <video ref={ref} autoPlay playsInline muted />
+                </CardContent>
+                <CardTitle className="text-center">{socket?.id}</CardTitle>
+            </Card>
+
+            {Object.keys(streams).map((key, index) => (
+                <Card>
+                    <CardContent>
+                        <video
+                            key={index}
+                            ref={videoRefs[index]}
+                            autoPlay
+                            playsInline
+                            muted
+                        />
+                    </CardContent>
+                    <CardTitle className="text-center">{key}</CardTitle>
+                </Card>
+            ))}
         </div>
     );
 }

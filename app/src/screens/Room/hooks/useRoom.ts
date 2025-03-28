@@ -1,15 +1,23 @@
-import { localStream as localStreamAction } from "@/redux/home/slice";
+import { MainContext } from "@/layouts/main/mainContext";
+import {
+    createAnswer,
+    localStream as localStreamAction,
+} from "@/redux/home/slice";
 import { RootState } from "@/redux/store";
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { useContext, useEffect, useMemo, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
 export const useRoom = () => {
     const ref = useRef<HTMLVideoElement>(null);
     // const videoRefs = useRef<HTMLVideoElement[]>([]);
     const dispatch = useDispatch();
-    const { streams, localStream, peerConnections } = useSelector(
+    const { currentOffers, setCurrentOffers } = useContext(MainContext)!;
+
+    const { streams, localStream, socket } = useSelector(
         (state: RootState) => state?.home
     );
+
+    console.log("streams==", streams);
 
     const videoRefs = useMemo(() => {
         return Array.from({ length: 10 }, () =>
@@ -23,16 +31,12 @@ export const useRoom = () => {
                 videoRefs[index].current.srcObject = streams[key];
             }
         });
-    }, [streams]);
+    }, [streams, videoRefs]);
 
     useEffect(() => {
         if (ref.current) ref.current.srcObject = localStream;
-    }, [localStream]);
 
-    console.log("Streams===", streams, localStream);
-
-    useEffect(() => {
-        if (ref.current) {
+        if (!localStream) {
             navigator.mediaDevices
                 .getUserMedia({ video: true, audio: true })
                 .then((stream) => {
@@ -40,7 +44,16 @@ export const useRoom = () => {
                     //@ts-ignore
                 });
         }
-    }, [ref.current]);
 
-    return { streams, ref, videoRefs };
+        if (localStream && currentOffers.length > 0) {
+            let size = currentOffers.length;
+            for (let i = 0; i < size; i++) {
+                dispatch(
+                    createAnswer({ ...currentOffers[i], stream: localStream })
+                );
+            }
+        }
+    }, [localStream, currentOffers]);
+
+    return { streams, ref, videoRefs, socket };
 };

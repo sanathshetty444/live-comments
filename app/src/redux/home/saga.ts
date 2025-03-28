@@ -14,7 +14,7 @@ import {
     clearSocketAndRTC,
     clearSocketAndRTCSuccess,
     createAnswer,
-    createOffer,
+    createOfferWhenSomeoneJoins,
     initializeSocket,
     initializeSocketSuccess,
     joinRoom,
@@ -23,6 +23,7 @@ import {
     localStream,
     localStreamSuccess,
     onAnswerReceived,
+    removePeer,
 } from "./slice";
 import { PayloadAction } from "@reduxjs/toolkit";
 
@@ -63,13 +64,7 @@ function* createPeerConnectionHelperSaga({ userId }: { userId: string }) {
             peerConnection.onicecandidate = (
                 event: RTCPeerConnectionIceEvent
             ) => {
-                console.log(
-                    "ICE Candidate State:",
-                    peerConnection.iceConnectionState
-                );
-
                 if (event.candidate) {
-                    console.log("Sending ICE Candidate:", event.candidate);
                     socket.emit("iceCandidate", {
                         roomId: data?.home?.roomId,
                         candidate: event.candidate,
@@ -86,6 +81,16 @@ function* createPeerConnectionHelperSaga({ userId }: { userId: string }) {
                     "ICE Connection State:",
                     peerConnection.iceConnectionState
                 );
+                if (
+                    peerConnection.iceConnectionState === "disconnected" ||
+                    peerConnection.iceConnectionState === "failed" ||
+                    peerConnection.iceConnectionState === "closed"
+                ) {
+                    console.log("Peer disconnected. Cleaning up...");
+                    peerConnection.close();
+                    store.dispatch(removePeer({ userId }));
+                }
+                // Perform any additional cleanup like remo
             };
 
             peerConnection.onicecandidateerror = (ev) => {
@@ -111,7 +116,7 @@ function* createPeerConnectionHelperSaga({ userId }: { userId: string }) {
     } catch (error) {}
 }
 
-function* createOfferSaga({
+function* createOfferWhenSomeoneJoinsSaga({
     payload: { userId },
 }: PayloadAction<{ userId: string }>) {
     try {
@@ -119,18 +124,15 @@ function* createOfferSaga({
         const socket = data?.home?.socket!;
         const localStream = data?.home?.localStream;
 
+        if (data?.home?.peerConnections?.[userId]) return;
+
         const peerConnection: RTCPeerConnection =
             yield createPeerConnectionHelperSaga({ userId });
 
-        yield call(() => {
-            localStream?.getTracks().forEach((track) => {
-                peerConnection.addTrack(track, data?.home?.localStream!);
-            });
+        localStream?.getTracks().forEach((track) => {
+            peerConnection.addTrack(track, data?.home?.localStream!);
         });
 
-        // for (let track of localStream?.getTracks() || []) {
-        //     peerConnection.addTrack(track, data?.home?.localStream!);
-        // }
         //@ts-ignore
         const offer = yield call([peerConnection, peerConnection.createOffer]);
 
@@ -146,21 +148,31 @@ function* createOfferSaga({
             roomId: data?.home?.roomId,
         });
 
-        return peerConnection;
+        return;
     } catch (error) {
         console.log(error);
     }
 }
 
 function* createAnswerSaga({
-    payload: { offer, userId },
-}: PayloadAction<{ offer: RTCSessionDescriptionInit; userId: string }>) {
+    payload: { offer, userId, stream },
+}: PayloadAction<{
+    offer: RTCSessionDescriptionInit;
+    userId: string;
+    stream: MediaStream;
+}>) {
     try {
         const data: RootState = yield select();
         const socket = data?.home?.socket!;
 
         const peerConnection: RTCPeerConnection =
             yield createPeerConnectionHelperSaga({ userId });
+
+        yield call(() => {
+            stream?.getTracks().forEach((track) => {
+                peerConnection.addTrack(track, stream);
+            });
+        });
 
         yield call(
             //@ts-ignore
@@ -201,6 +213,7 @@ function* onAnswerReceivedSaga({
         const peerConnections = data?.home?.peerConnections!;
 
         if (peerConnections[userId]) {
+            console.log("onAnswerReceivedSaga====", peerConnections[userId]);
             yield call(
                 //@ts-ignore
                 [
@@ -265,7 +278,10 @@ export function* homeSaga() {
         takeLatest(joinRoom.type as any, joinRoomSaga),
         takeLatest(initializeSocket.type as any, initialize),
         takeLatest(clearSocketAndRTC.type as any, clearSocketAndRTCSaga),
-        takeEvery(createOffer.type as any, createOfferSaga),
+        takeEvery(
+            createOfferWhenSomeoneJoins.type as any,
+            createOfferWhenSomeoneJoinsSaga
+        ),
         takeEvery(createAnswer.type as any, createAnswerSaga),
         takeEvery(onAnswerReceived.type as any, onAnswerReceivedSaga),
         takeLatest(localStream.type as any, localStreamSaga),

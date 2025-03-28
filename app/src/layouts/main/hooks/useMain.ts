@@ -2,20 +2,24 @@ import {
     addICE,
     clearSocketAndRTC,
     createAnswer,
-    createOffer,
+    createOfferWhenSomeoneJoins,
     initializeSocket,
     joinRoom,
     onAnswerReceived,
 } from "@/redux/home/slice";
 import { RootState } from "@/redux/store";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 
 export const useMain = () => {
     const state = useSelector((state: RootState) => state?.home);
     const dispatch = useDispatch();
-
-    const candidateSet = useRef(new Set());
+    const [currentOffers, setCurrentOffers] = useState<
+        {
+            userId: string;
+            offer: RTCSessionDescriptionInit;
+        }[]
+    >([]);
 
     useEffect(() => {
         dispatch(initializeSocket());
@@ -49,7 +53,7 @@ export const useMain = () => {
             try {
                 console.log("Join room==", userId, socket.id);
                 if (userId !== socket.id) {
-                    dispatch(createOffer({ userId }));
+                    dispatch(createOfferWhenSomeoneJoins({ userId }));
                 }
             } catch (error) {
                 console.error("Join Room==", error);
@@ -66,7 +70,10 @@ export const useMain = () => {
             }) => {
                 try {
                     if (userId !== socket?.id) {
-                        dispatch(createAnswer({ offer, userId }));
+                        setCurrentOffers((offers) => [
+                            ...offers,
+                            { offer, userId },
+                        ]);
                     }
                 } catch (error) {
                     console.error("Error handling offer:", error);
@@ -116,5 +123,5 @@ export const useMain = () => {
         );
     }
 
-    return { handleJoinRoom };
+    return { currentOffers, setCurrentOffers, handleJoinRoom };
 };

@@ -50,7 +50,10 @@ const homeSlice = createSlice({
                 socket: data?.payload?.socket,
             };
         },
-        createOffer(state, _: PayloadAction<{ userId: string }>) {
+        createOfferWhenSomeoneJoins(
+            state,
+            _: PayloadAction<{ userId: string }>
+        ) {
             return {
                 ...state,
             };
@@ -87,11 +90,19 @@ const homeSlice = createSlice({
                 },
             };
         },
+        removePeer(
+            state,
+            { payload: { userId } }: PayloadAction<{ userId: string }>
+        ) {
+            delete state.peerConnections[userId];
+            delete state.streams[userId];
+        },
         createAnswer(
             state: HomeState,
             _: PayloadAction<{
                 offer: RTCSessionDescriptionInit;
                 userId: string;
+                stream: MediaStream;
             }>
         ) {
             return {
@@ -180,9 +191,10 @@ export const {
     addRemoteTrackSuccess,
     createAnswer,
     addICE,
-    createOffer,
+    createOfferWhenSomeoneJoins,
     onAnswerReceived,
     localStream,
     localStreamSuccess,
+    removePeer,
 } = homeSlice.actions;
 export default homeSlice;
